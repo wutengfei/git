@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<AlgthTest name="SM2SignSynergy" id="00001">
+    <!--
+        id required 测试用例ID 唯一：格式待定
+    -->
+    <test_description>测试用例描述,SM2协同签名</test_description>
+    <issuer_id>提测方id</issuer_id>
+    <issuer_name>提测方名字</issuer_name>
+    <issue_instant>提测时间</issue_instant>
+    <tags>正常用例</tags>
+
+    <has_companyDevice>true</has_companyDevice><!--有无陪测设备-->
+    <company_devicelist>
+        <company_device id="1">
+            <company_device_name>名称</company_device_name>
+            <company_device_addr>地址</company_device_addr>
+        </company_device>
+    </company_devicelist>
+
+    <actionlist enter="ac1" totalcount="8">
+        <!--   actionlist 标识测试活动集合，每个测试用例中只能包含一个actionlist， 属性：
+                totalcount required  集合中活动个数
+                enter action入口 required  必须存在
+        -->
+        <action company_device_id="" flow="1" id="ac1" next="ac2">
+            <!--
+                  action: 测试活动集合中的具体活动，属性:
+                      id:  required 活动的唯一标识
+                      flow required 1 测试 2 基准 3 陪测  4 网络节点
+                      next 下一个action 如果为空，则结束
+                      company_device_id  陪测设备id
+              -->
+            <func_name>mobileGenKey</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="PIN" action_id="" required="true" type=""></param>
+                <!-- 属性：name 参数名称，
+                         required 是否必须输入，如果为true则必须有值，若值为空则应在测试过程中手动输入
+                       type=output 需要从其他action结果获取，若为空则不需要从其他action中获取
+                       action_id 参数来源的action_id，若为空则不需要从其他action中获取
+                       参数值都转成base64-->
+                <!--根据PIN、随机数、设备ID计算SM3Hash生成prikey1，根据prikey1得出pubkeyPoint，返回pubkeyPoint-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="1" flow="3" id="ac2" next="ac3">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点 -->
+            <func_name>companyGenKey</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="pubkeyPoint" action_id="ac1" required="true" type="output"></param><!--ac1返回的pubkeyPoint-->
+            <!--生成TBS和prikey2，返回TBS-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="" flow="1" id="ac3" next="ac4">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点 -->
+            <func_name>mobileGenP10</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <!-- 测试活动参数，每个action标签下只能有一个该标签 -->
+                <param name="TBS" action_id="ac2" required="true" type=""></param><!--ac2中返回的TBS-->
+
+                <!--  返回P10-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="1" flow="3" id="ac4" next="ac5">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点 -->
+            <func_name>companyGenCert</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="P10" action_id="ac3" required="true" type="output"></param><!--ac3返回的P10-->
+              <!--返回证书-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="" flow="1" id="ac5" next="ac6">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点 -->
+            <func_name>SM3ForSM2Sign</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="cert" action_id="ac4" required="true" type="output"></param><!--ac4中返回的证书-->
+                <param name="text" action_id="" required="true" type="">待签原文数据</param>
+                <!--私钥在测试设备里面，参与计算但不作为参数传递-->
+                <!--  计算出text的hash值-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="1" flow="3" id="ac6" next="ac7">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点 -->
+            <func_name>SM2CompanySign</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="hash" action_id="ac5" required="true" type="output"></param><!--ac5返回的hash值-->
+               <!--陪测设备使用prikey2对hash值进行加密，返回一半签名sign1-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="" flow="1" id="ac7" next="ac8">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点-->
+            <func_name>SM2MobileSign</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="hash" action_id="ac5" required="true" type="output"></param><!--ac5返回的hash值-->
+                <param name="sign1" action_id="ac6" required="true" type="output"></param><!--ac6中返回的一半签名sign1-->
+               <!--测试设备使用prikey1对hash值进行加密生成sign2，并与sign1合成完整签名fullSign，返回fullSign-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="" flow="2" id="ac8" next="">
+            <!--  flow 2 基准设备-->
+            <func_name>VeriSign</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="cert" action_id="ac4" required="true" type="output"></param><!--ac4中返回的证书-->
+                <param name="fullSign" action_id="ac7" required="true" type="output"></param><!--ac7中返回的完整签名fullSign-->
+                <param name="hash" action_id="ac5" required="true" type="output"></param><!--ac5返回的hash值-->
+            </paramlist>
+        </action>
+    </actionlist>
+
+    <!-- 网络节点处理-->
+    <result type="uncompare">
+        <!--compare 对比,上面几个action的输出或输入做对比，
+           uncompare 不对比，直接判断value的值是否为基准设备返回的测试成功的标记
+           （如基准设备测试通过返回为true则value与true比较）-->
+        <value action_id="ac8" type="output"></value>
+        <!--action_id 数据的来源
+       type：
+       input 以上action中的入参，值为action中param的name的值
+       output 以上action中的出参,
+       -->
+    </result>
+
+
+</AlgthTest>

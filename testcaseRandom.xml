@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<AlgthTest name="Random" id="00001">
+    <!--
+        id required 测试用例ID 唯一    
+    -->
+    <test_description>测试用例描述, 随机数测试</test_description>
+    <issuer_id>提测方id</issuer_id>
+    <issuer_name>提测方名字</issuer_name>
+    <issue_instant>提测时间</issue_instant>
+    <tags>正常用例</tags>
+
+    <has_companyDevice>false</has_companyDevice><!--有无陪测设备,待定-->
+    <company_devicelist><!--待定-->
+    </company_devicelist>
+
+    <actionlist enter="ac1" totalcount="3">
+        <!--   actionlist 标识测试活动集合，每个测试用例中只能包含一个actionlist， 属性：
+                totalcount required  集合中活动个数
+                enter action入口 required  必须存在
+        -->
+        <action company_device_id="" flow="1" id="ac1" next="ac2">
+            <!--
+                action: 测试活动集合中的具体活动，属性:
+                    id:  required 活动的唯一标识
+                    flow required 1 测试 2 基准 3 陪测  4 网络节点
+                    next 下一个action 如果为空，则结束
+					company_device_id  陪测设备id
+            -->
+            <func_name>random</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <!-- 测试活动参数，每个action标签下只能有一个该标签 -->
+                <param name="length" action_id="" required="true" type="">长度</param>
+                <!-- 属性：name 参数名称，
+                 required 是否必须输入，如果为true则必须有值，若值为空则应在测试过程中手动输入
+               type=output 需要从其他action的结果中获取，若为空则不需要从其他action中获取
+                 action_id 参数来源的action_id，若为空则不需要从其他action中获取
+                        参数值都转成base64-->
+                <!--会输出一个128M的文件，返回文件路径-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="" flow="1" id="ac2" next="ac3">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点
+            随机性检测平台也当做基准设备-->
+            <func_name>uploadFile</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="filePath" action_id="ac1" required="true" type="output"></param><!--测试手机中的文件地址-->
+                <!--文件上传到节点设备指定地址，返回节点设备上的文件路径-->
+            </paramlist>
+        </action>
+
+        <action company_device_id="" flow="2" id="ac3" next="">
+            <!-- flow required 1 测试 2 基准 3 陪测  4 网络节点
+            随机性检测平台也当做基准设备-->
+            <func_name>randomVerify</func_name>
+            <func_id>方法ID</func_id>
+            <paramlist>
+                <param name="randomFile" action_id="ac2" required="true" type="output"></param>
+            </paramlist>
+        </action>
+    </actionlist>
+
+    <!-- 网络节点处理-->
+    <result type="uncompare">
+        <!--compare 对比,上面几个action的输出或输入做对比，
+        uncompare 不对比，直接判断value的值是否为基准设备返回的测试成功的标记
+        （如基准设备测试通过返回为true则value与true比较）-->
+        <value action_id="ac3" type="output"></value>
+        <!--action_id 数据的来源
+        type：
+        input以上action中的入参，值为action中param的name的值
+        output以上action中的出参
+        -->
+    </result>
+
+</AlgthTest>
